@@ -13,20 +13,6 @@
   const serverUrl = 'https://games.nightkitty.top:8888'
   if (!global.$LinuxDoMiniGames) global.$LinuxDoMiniGames = {}
 
-  const api = {
-    // 获取游戏信息
-    getGameById: function (id, callback) {
-      fetch(`${serverUrl}/game/${id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          callback(data)
-        })
-        .catch((err) => {
-          console.error(err)
-        })
-    }
-  }
-
   // 动态加载Socket.IO客户端库
   function loadSocketIO(callback) {
     const script = document.createElement('script')
@@ -51,6 +37,14 @@
   countdownElement.className = 'countdown-text'
   overlayElement.appendChild(countdownElement)
   document.body.insertBefore(overlayElement, document.body.firstChild)
+
+  // 所有相关的Interval定时器变量，统一管理方便集中销毁
+  const intervalManager = {
+    countdownTimer: null,
+    startGameInterval: null,
+    waitGameResultCountdownInterval: null
+  }
+
   // 创建样式层
   const styleElement = document.createElement('style')
   styleElement.textContent = `
@@ -85,7 +79,7 @@
   // 匹配成功样式及准备按钮样式
   function matchSuccessAndReadyStyle(miniGameName, callback) {
     const matchReadyCallback = () => {
-      clearInterval(interval)
+      clearInterval(intervalManager.startGameInterval)
       readyButton.disabled = true
       global.$LinuxDoMiniGames.matchReady(() => {
         el.textContent = '已准备就绪，请稍后...'
@@ -110,12 +104,12 @@
     countdownElement.appendChild(el)
     countdownElement.appendChild(readyButton)
 
-    const interval = window.setInterval(() => {
+    intervalManager.startGameInterval = window.setInterval(() => {
       countdown--
       el.textContent = `您匹配到的小游戏是：${miniGameName}，${countdown}秒后自动准备。`
 
       if (countdown === 0) {
-        clearInterval(interval)
+        clearInterval(intervalManager.startGameInterval)
         el.textContent = '已自动准备'
         readyButton.remove()
         global.$LinuxDoMiniGames.matchReady(matchReadyCallback)
@@ -133,13 +127,13 @@
       remainingTime--
 
       if (remainingTime < 0) {
-        clearInterval(countdownTimer)
+        clearInterval(intervalManager.countdownTimer)
         endCountdown(callback)
       }
     }
 
     updateCountdown()
-    const countdownTimer = setInterval(updateCountdown, 1000)
+    intervalManager.countdownTimer = setInterval(updateCountdown, 1000)
   }
 
   // 倒计时结束处理
@@ -153,10 +147,9 @@
     }, 1000)
   }
 
-  let waitGameResultCountdownInterval = null
   function waitGameResultCountdown(divElement) {
     let dotCount = 0
-    waitGameResultCountdownInterval = setInterval(() => {
+    intervalManager.waitGameResultCountdownInterval = setInterval(() => {
       dotCount = (dotCount + 1) % 4 // 循环从0到3，对应"."的数量
       const textContent = `等待对战结果${'.'.repeat(dotCount)}`
       divElement.textContent = textContent
@@ -174,7 +167,7 @@
     }, 2000)
   }
   function gameOver(playerId, gameResult) {
-    clearInterval(waitGameResultCountdownInterval)
+    clearInterval(intervalManager.waitGameResultCountdownInterval)
     const goHomeBtn = document.createElement('button')
     goHomeBtn.innerHTML = '返回首页'
     goHomeBtn.addEventListener('click', () => {
@@ -210,6 +203,12 @@
 
   // 定义SDK方法
   const sdkMethods = {
+    // 清除所有Interval
+    clearAllInterval: function () {
+      for (const key in intervalManager) {
+        clearInterval(intervalManager[key])
+      }
+    },
     // Socket.IO连接管理
     setSocketConnection: function (connection) {
       socketConnection = connection
@@ -284,6 +283,8 @@
       }
 
       const data = sdkMethods.getGameData()
+
+      if (data.gameStatus === 'gameInterrupt') return
       socket.emit(
         'matchReady',
         JSON.stringify({
@@ -302,9 +303,10 @@
     // 游戏结束回调 小游戏端需要调用该方法
     // data包含score 代表游戏成绩
     gameOverCallback: function (data) {
+      if (gameData.gameStatus === 'gameInterrupt') return
+
       console.log('游戏结束，SDK的gameOverCallback被调用')
 
-      console.log('gameOverCallback')
       waitingGameResult()
       const socket = sdkMethods.getSocketConnection()
       // 向服务器提交游戏结束
@@ -331,7 +333,7 @@
   // 处理Socket.IO连接和事件
   function socketConnectionHandler(playerId) {
     // 创建Socket.IO连接
-    const socket = io(`${serverUrl}/games`)
+    const socket = window.io(`${serverUrl}/games`)
     sdkMethods.setSocketConnection(socket)
 
     // 监听Socket.IO事件
@@ -388,6 +390,27 @@
             gameData.gameStatus = 'end'
             gameOver(gameData.playerId, JSON.parse(data))
           })
+        })
+
+        // 游戏中断事件
+        socket.on('gameInterrupt', (data) => {
+          console.log('gameInterrupt', data)
+          sdkMethods.updateGameStatus('gameInterrupt')
+
+          // 清除所有Interval
+          sdkMethods.clearAllInterval()
+
+          const goHomeBtn = document.createElement('button')
+          goHomeBtn.innerHTML = '返回首页'
+          goHomeBtn.addEventListener('click', () => {
+            window.location.href = '/'
+          })
+
+          countdownElement.innerHTML = `
+              <div>对方玩家已掉线，游戏结束</div>
+            `
+          countdownElement.appendChild(goHomeBtn)
+          overlayElement.style.display = 'block'
         })
       })
     })

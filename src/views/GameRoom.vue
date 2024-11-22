@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeMount, onMounted, nextTick } from 'vue'
+import { ref, onBeforeMount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getGameRoomById, getMiniGameById } from '@/api/game'
