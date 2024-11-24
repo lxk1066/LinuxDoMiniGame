@@ -1,5 +1,9 @@
 import request from '@/utils/request'
 
+export const getAllMiniGame = () => {
+  return request.get('/game/list')
+}
+
 export const getMiniGameById = (miniGameId: number) => {
   return request.get('/game/' + miniGameId)
 }

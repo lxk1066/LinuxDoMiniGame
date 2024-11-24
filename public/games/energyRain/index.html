@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>能量雨</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+      }
+      .container {
+        width: 500px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .game {
+        position: relative;
+        height: 620px;
+        outline: 1px solid black;
+        user-select: none;
+        overflow: hidden;
+      }
+
+      .ball {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background-color: orange;
+        border-radius: 50%;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 28px;
+        color: white;
+      }
+
+      .big-ball {
+        width: 80px;
+        height: 80px;
+      }
+
+      .time {
+        display: flex;
+        justify-content: space-evenly;
+      }
+      .time span:nth-child(1) {
+        display: block;
+        width: 40px;
+        margin-left: 5px;
+        text-align: left;
+      }
+
+      .time span:nth-child(2) {
+        display: block;
+        margin-left: 5px;
+        text-align: right;
+      }
+
+      .info {
+        border: 1px solid black;
+        background-color: #e3e3e3;
+        width: 220px;
+        height: 210px;
+        text-align: center;
+        font-size: 20px;
+        padding-bottom: 50px;
+        margin-top: 50px;
+        margin-left: 10px;
+      }
+      .legend-list {
+        width: 100%;
+        margin-left: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .legend-item {
+        /* height: 40px; */
+        margin: 10px 0;
+        line-height: 40px;
+      }
+      .legend-item-label {
+        display: inline-block;
+        padding-left: 50px;
+      }
+      .legend-item-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        font-size: 15px;
+        line-height: 18px;
+
+        transform: translateX(50px);
+      }
+      .legend-item-info h4 {
+        font-size: 15px;
+        line-height: 18px;
+        padding: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="score">
+          分数:
+          <span>0</span>
+        </div>
+        <button class="start" style="display: none">开始</button>
+        <button class="end" style="display: none">结束</button>
+        <div class="time">
+          倒计时:
+          <span>0.00</span>
+          <span>s</span>
+        </div>
+      </div>
+      <div class="game">
+        <!-- <div class="ball">3</div> -->
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="legend-list">
+        <div class="legend-item">
+          <span class="ball">10</span>
+          <span class="legend-item-label">得分球</span>
+          <div class="legend-item-info">
+            <span>
+              + 分数
+              <strong>+10</strong>
+            </span>
+          </div>
+        </div>
+        <div class="legend-item">
+          <span class="ball">5</span>
+          <span class="legend-item-label">得分球</span>
+          <div class="legend-item-info">
+            <span>
+              + 分数
+              <strong>+5</strong>
+            </span>
+          </div>
+        </div>
+        <div class="legend-item">
+          <span class="ball" style="background-color: black">B</span>
+          <span class="legend-item-label">炸弹球</span>
+          <div class="legend-item-info">
+            <span>
+              + 分数
+              <strong>-10</strong>
+            </span>
+            <span>+ 清空场上所有球</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { getProbability } from './utools.js'
+      /**
+       * Ball
+       *  - score
+       *  - speed
+       *  - left
+       *  - top
+       *  - el
+       *
+       *  - render() 创建并渲染
+       *  - clickHandler() 处理小球点击
+       *  - remove() 删除小球
+       *  - move() 小球移动一步
+       *
+       * Game
+       *  - el
+       *  - scoreEl
+       *  - timeEl
+       *  - startBtn
+       *  - timer
+       *  - score
+       *  - time
+       *  - gameEl
+       *
+       *  - gameStart()
+       *  - gameOver()
+       *  - updateScore()
+       *  - updateStatus()
+       *
+       **/
+
+      class Ball {
+        constructor(game) {
+          this.game = game
+          this.score = 10
+          this.speed = this.randNumInt(2, 3)
+          this.left = this.randNumInt(0, 460)
+          this.top = -40
+          this.el = null
+
+          this.render()
+          this.el.onclick = this.clickHandler.bind(this)
+        }
+
+        randNumInt(num1, num2) {
+          const min = Math.min(num1, num2)
+          const max = Math.max(num1, num2)
+          return Math.floor(Math.random() * (max - min + 1) + min)
+        }
+
+        render() {
+          let ball = document.createElement('div')
+
+          ball.className = 'ball'
+          ball.textContent = this.score
+          ball.style.left = `${this.left}px`
+          ball.style.top = `${this.top}px`
+
+          this.game.gameEl.append(ball)
+          this.el = ball
+        }
+
+        clickHandler() {
+          this.game.updateScore(this.score)
+
+          this.remove()
+        }
+
+        move() {
+          this.top += this.speed
+
+          this.el.style.top = `${this.top}px`
+        }
+
+        remove() {
+          this.el.remove()
+        }
+      }
+
+      class BigBall extends Ball {
+        constructor(game) {
+          super(game)
+
+          this.score = 5
+
+          this.changeStyle()
+        }
+
+        changeStyle() {
+          this.el.textContent = this.score
+          this.el.classList.add('big-ball')
+          this.el.left = this.left - 20
+        }
+      }
+
+      class BoomBall extends Ball {
+        constructor(game) {
+          super(game)
+
+          this.changeStyle()
+        }
+
+        changeStyle() {
+          this.el.classList.add('big-ball')
+          this.el.style.backgroundColor = 'black'
+          this.el.textContent = 'B'
+        }
+
+        clickHandler() {
+          this.game.gameEl.innerHTML = null
+          this.game.ballList.length = 0
+          this.game.score -= 10
+        }
+      }
+
+      class Game {
+        constructor(time = 10000) {
+          this.el = document.querySelector('.container')
+          this.scoreEl = this.el.querySelector('.score span')
+          this.timeEl = this.el.querySelector('.time span')
+          this.gameEl = this.el.querySelector('.game')
+          this.startBtn = this.el.querySelector('.start')
+
+          this.score = 0
+          this.defaultTime = time
+          this.time = time // ms
+          this.timer = null
+
+          this.ballList = []
+          this.ballTypeList = []
+        }
+
+        init() {
+          this.score = 0
+          this.time = this.defaultTime
+          this.timer = null
+        }
+
+        gameStart(startCb = () => {}, endCb = () => {}) {
+          this.init()
+          let count = 0
+
+          this.timer = setInterval(() => {
+            this.time -= 1000 / 60
+
+            count++
+
+            // 创建小球
+            if (count % 20 == 0) {
+              // let index = this.randNumInt(0, this.ballTypeList.length - 1);
+              let index = getProbability([60, 20, 20])
+              console.log(index)
+              this.ballList.push(new this.ballTypeList[index](this))
+            }
+
+            // 小球移动
+            this.ballList.forEach((ball) => ball.move())
+
+            if (this.time <= 0) {
+              this.time = 0
+              this.gameOver()
+            }
+
+            this.updateStatus()
+          }, 1000 / 60)
+
+          startCb && startCb()
+          this.endCallback = endCb
+        }
+
+        randNumInt(num1, num2) {
+          const min = Math.min(num1, num2)
+          const max = Math.max(num1, num2)
+          return Math.floor(Math.random() * (max - min + 1) + min)
+        }
+
+        gameOver() {
+          this.gameEl.innerHTML = null
+          this.timeEl.textContent = '0.00'
+
+          clearInterval(this.timer)
+          this.timer = null
+          this.time = 0
+
+          if (this.endCallback) this.endCallback()
+        }
+
+        updateScore(score) {
+          this.score += score
+
+          this.updateStatus()
+        }
+
+        updateStatus() {
+          this.scoreEl.textContent = this.score
+
+          this.timeEl.textContent = (this.time / 1000).toFixed(2)
+        }
+
+        addType(...types) {
+          this.ballTypeList.push(...types)
+        }
+      }
+
+      // 游戏时间 time 单位毫秒
+      let game = new Game(1000 * 60)
+      game.addType(BigBall, BoomBall, Ball) // 控制反转
+
+      const startBtn = document.querySelector('.start')
+      const endBtn = document.querySelector('.end')
+
+      startBtn.onclick = () => {
+        game.gameStart(
+          () => {
+            startBtn.disabled = true
+          },
+          () => {
+            startBtn.disabled = false
+            // 游戏结束，将分数传给父页面
+            window.$LinuxDoMiniGames.gameOverCallback({ score: game.score })
+          }
+        )
+      }
+
+      endBtn.onclick = () => {
+        game.gameOver()
+      }
+
+      // 监听父页面的消息，开始游戏
+      window.addEventListener('message', function (event) {
+        console.log('message: ', event.data.type) // message: sdkReady
+
+        window.$LinuxDoMiniGames.miniGameReady({
+          startGame: function () {
+            startBtn.click()
+          }
+        })
+      })
+    </script>
+
+    <!-- 
+    let arr = [1,2,3]
+    let arrValue = [10,70,20] // 1-10,11->80,81-100
+
+    // index -> [0,2]
+    // index -> [1,100]
+    // 27,88
+
+    let max = 0;
+    loop [10,70,20]
+     - 0: num: 10, max -> 10
+     - 1: num: 70, max -> 80
+
+   -->
+  </body>
+</html>

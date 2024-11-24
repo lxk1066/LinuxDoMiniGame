@@ -1,10 +1,23 @@
 <template>
-  <iframe ref="iframeRef" v-if="iframeUrl" class="iframe" :src="iframeUrl" frameborder="0"></iframe>
+  <iframe
+    ref="iframeRef"
+    v-if="iframeUrl"
+    class="iframe"
+    :src="iframeUrl"
+    frameborder="0"
+    sandbox="allow-scripts allow-same-origin"
+  ></iframe>
   <div v-else>{{ info }}</div>
+
+  <div v-if="info && isError" style="margin: 20px">
+    <div>小游戏作者：{{ errorInfo.author }}</div>
+    <div>站长：{{ errorInfo.admin }}</div>
+    <div>错误信息：<br />{{ errorInfo.error }}</div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeMount, nextTick } from 'vue'
+import { ref, reactive, onBeforeMount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getGameRoomById, getMiniGameById } from '@/api/game'
@@ -12,10 +25,18 @@ import { useBaseStore } from '@/stores'
 import gameSDK from '@/utils/gameSdk'
 
 const store = useBaseStore()
-const info = ref('正在加载...')
 const route = useRoute()
+const info = ref('正在加载...')
+const miniGameInfo = ref<any>({})
 const iframeUrl = ref('')
 const iframeRef = ref<HTMLElement>()
+const isError = ref(false)
+const errorInfo = reactive({
+  author: '',
+  admin: '',
+  error: ''
+})
+
 onBeforeMount(async () => {
   const gameId = route.params.id as string
   try {
@@ -25,6 +46,7 @@ onBeforeMount(async () => {
       const { data: gameInfo } = await getMiniGameById(gameRoom.data.gameTypeId)
 
       if (gameInfo.code == 200) {
+        miniGameInfo.value = gameInfo.data
         const callback = store.getMatchSuccessCallback()
         callback(gameInfo.data)
 
@@ -64,6 +86,29 @@ function loadIframe() {
         '*'
       )
     }
+
+    // 监听 iframe window 的 error 事件
+    iframe.contentWindow.window.onerror = (e) => {
+      // 将错误信息工整的打印到控制台
+      console.log('gameRoom ', e, JSON.stringify(e, null, 2))
+
+      iframeUrl.value = ''
+      isError.value = true
+      info.value = '小游戏页面抛出异常错误，请联系小游戏作者或者站长'
+
+      if (miniGameInfo.value.authorContact) {
+        errorInfo.author = `${miniGameInfo.value.author} ${miniGameInfo.value.authorContact}`
+      } else {
+        errorInfo.author = '无'
+      }
+      errorInfo.admin = 'QQ群：' + 853909196
+      errorInfo.error = JSON.stringify(e, null, 2)
+
+      ElMessage.error({
+        message: '小游戏页面抛出异常错误，请联系小游戏作者或者站长',
+        type: 'error'
+      })
+    }
   } else {
     info.value = 'iframe加载失败'
     ElMessage.error({
@@ -78,5 +123,11 @@ function loadIframe() {
 .iframe {
   width: 99vw;
   height: 99vh;
+}
+#shadow-dom {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 </style>

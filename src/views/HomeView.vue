@@ -7,11 +7,12 @@ import {
   ElIcon,
   ElCarousel,
   ElCarouselItem,
-  ElMessageBox
+  ElMessageBox,
+  ElMessage
 } from 'element-plus'
 import { UserFilled, Search, InfoFilled, Loading } from '@element-plus/icons-vue'
 import { useBaseStore } from '@/stores'
-import { getServerInfo } from '@/api/game'
+import { getServerInfo, getAllMiniGame } from '@/api/game'
 
 import gameSDK from '@/utils/gameSdk'
 import { useRouter } from 'vue-router'
@@ -23,6 +24,8 @@ const avatarUrl = ref('')
 
 // 用户名
 const userName = ref('')
+// 小游戏列表
+const miniGameList = ref<any[]>([])
 
 const serverInfo = reactive({
   // 服务器玩家人数
@@ -50,12 +53,26 @@ onBeforeMount(async () => {
       gameSDK.init(userInfo.data.id)
 
       store.userLogin()
+
+      // 登录成功后获取服务器信息
+      await fetchServerInfo()
     }
   }
 })
 
 onMounted(async () => {
-  await fetchServerInfo()
+  await getAllMiniGame()
+    .then(({ data }) => {
+      console.log('allMiniGame: ', data)
+      if (data.code == 200) {
+        miniGameList.value = data.data
+      } else {
+        ElMessage.error('获取小游戏列表失败')
+      }
+    })
+    .catch(() => {
+      ElMessage.error('获取小游戏列表失败')
+    })
 })
 
 async function fetchServerInfo() {
@@ -218,23 +235,13 @@ const clickCarousel = (item: number) => {
     <main>
       <h2>目前已开放的游戏</h2>
       <div class="game-list">
-        <div class="item">
+        <div class="item" v-for="miniGame in miniGameList" :key="miniGame.id">
           <div class="item-info">
             <div class="item-title">
-              <h4>贪吃蛇</h4>
+              <h4>{{ miniGame.name }}</h4>
             </div>
             <div class="item-desc">
-              <p>两名玩家各自为战，每人有三条命，最后分数最高者胜出。</p>
-            </div>
-          </div>
-        </div>
-        <div class="item">
-          <div class="item-info">
-            <div class="item-title">
-              <h4>能量雨</h4>
-            </div>
-            <div class="item-desc">
-              <p>两名玩家各自为战，在指定时间内获得更多分数，分数最高者胜出。</p>
+              <p>{{ miniGame.description }}</p>
             </div>
           </div>
         </div>
@@ -262,6 +269,7 @@ const clickCarousel = (item: number) => {
   width: 100vw;
   height: 100vh;
   background-color: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
 
   &.show {
     display: flex;

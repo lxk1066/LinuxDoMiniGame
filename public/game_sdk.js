@@ -11,6 +11,7 @@
 // sdk
 ;(function (global) {
   const serverUrl = 'https://games.nightkitty.top:8888'
+  // const serverUrl = 'http://localhost:8888'
   if (!global.$LinuxDoMiniGames) global.$LinuxDoMiniGames = {}
 
   // 动态加载Socket.IO客户端库
@@ -96,7 +97,7 @@
     overlayElement.style.display = 'block'
     countdownElement.innerHTML = ''
     const el = document.createElement('div')
-    el.textContent = `您匹配到的小游戏是：${miniGameName}，${countdown}秒后自动准备。`
+    el.innerHTML = `您匹配到的小游戏是：${miniGameName}，<br />${countdown}秒后自动准备。`
     const readyButton = document.createElement('button')
     readyButton.className = 'mini-game-ready-button'
     readyButton.textContent = '准备'
