@@ -197,9 +197,23 @@ const clickCarousel = (item: number) => {
         <h2>{{ userName ? userName : '玩家请登录' }}</h2>
 
         <!-- 登录按钮 -->
-        <el-button type="primary" v-if="!store.isLogin" @click="handleLogin" :icon="UserFilled"
-          >LINUX DO 登录</el-button
-        >
+        <div v-if="!store.isLogin" class="login-btn">
+          <el-button class="linuxdo-btn" type="primary" @click="handleLogin">
+            <template #icon>
+              <img class="linuxdo-icon" src="../assets/linuxdo.png" />
+            </template>
+            LINUX DO 登录
+          </el-button>
+
+          <el-button
+            type="primary"
+            v-if="!store.isLogin"
+            @click="router.push('/signin')"
+            :icon="UserFilled"
+          >
+            账号密码登录
+          </el-button>
+        </div>
 
         <template v-else>
           <!-- 登出按钮 -->
@@ -348,6 +362,23 @@ const clickCarousel = (item: number) => {
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    .login-btn {
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+
+      .linuxdo-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 5px;
+        user-select: none;
+      }
+
+      .linuxdo-btn:hover .linuxdo-icon {
+        filter: brightness(150%);
+      }
+    }
 
     .server-info {
       display: flex;
