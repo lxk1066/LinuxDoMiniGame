@@ -53,7 +53,7 @@ const getInviteKey = async () => {
       duration: 5000
     })
   } else {
-    ElMessage.error('获取邀请码失败')
+    ElMessage.error(data.message || '获取邀请码失败')
   }
 }
 

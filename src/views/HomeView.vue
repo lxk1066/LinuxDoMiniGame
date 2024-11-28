@@ -200,7 +200,7 @@ const clickCarousel = (item: number) => {
         <div v-if="!store.isLogin" class="login-btn">
           <el-button class="linuxdo-btn" type="primary" @click="handleLogin">
             <template #icon>
-              <img class="linuxdo-icon" src="../assets/linuxdo.png" />
+              <img class="linuxdo-icon" src="https://linux.do/logo-24.svg" />
             </template>
             LINUX DO 登录
           </el-button>
