@@ -10,7 +10,7 @@ import {
   ElMessageBox,
   ElMessage
 } from 'element-plus'
-import { UserFilled, Search, InfoFilled, Loading } from '@element-plus/icons-vue'
+import { Promotion, UserFilled, Search, InfoFilled, Loading } from '@element-plus/icons-vue'
 import { useBaseStore } from '@/stores'
 import { getServerInfo, getAllMiniGame } from '@/api/game'
 
@@ -196,6 +196,17 @@ const clickCarousel = (item: number) => {
         <!-- 用户名称 -->
         <h2>{{ userName ? userName : '玩家请登录' }}</h2>
 
+        <!-- 单机模式 -->
+        <div class="offline-mode login-btn">
+          <el-button
+            type="primary"
+            @click="router.push({ name: 'offlineIndex' })"
+            :icon="Promotion"
+          >
+            单机/人机模式
+          </el-button>
+        </div>
+
         <!-- 登录按钮 -->
         <div v-if="!store.isLogin" class="login-btn">
           <el-button class="linuxdo-btn" type="primary" @click="handleLogin">
@@ -324,7 +335,6 @@ const clickCarousel = (item: number) => {
   width: 100vw;
   height: 100vh;
   display: flex;
-  height: 100vh;
 
   aside {
     display: flex;

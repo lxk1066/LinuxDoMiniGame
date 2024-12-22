@@ -51,7 +51,7 @@ onBeforeMount(async () => {
         callback(gameInfo.data)
 
         iframeUrl.value = gameInfo.data.path
-        nextTick(() => loadIframe())
+        await nextTick(() => loadIframe())
       } else {
         info.value = '小游戏不存在'
       }

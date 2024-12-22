@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./css/index.css" />
+    <title>贪吃蛇</title>
+  </head>
+  <body>
+    <div class="container">
+      <p class="regulation">
+        左侧为玩家视角，右侧为人机视角。
+        <span>
+          使用按键
+          <strong>WASD</strong>
+          (↑⟵↓⟶)控制小蛇移动; 按下其他任意键暂停。
+        </span>
+      </p>
+      <div class="header">
+        <div class="left">
+          <div class="player-box">
+            <button id="reStart" style="width: 100px; height: 30px; font-size: 20px; margin-bottom: 10px">
+              开始游戏
+            </button>
+            <div class="time">
+              剩余时间:
+              <span id="gameTime" class="time-number">99</span>
+              <span>s</span>
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <div class="name">人机视角</div>
+          <div class="time">
+            剩余时间:
+            <span id="machineGameTime" class="time-number">99</span>
+            <span>s</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="mf"></div>
+
+        <div class="side">
+          <div class="info">
+            <div class="legend">
+              <div>
+                <div class="legend-item" style="background-color: rgb(177, 177, 176)"></div>
+                <span>食物</span>
+              </div>
+              <div>
+                <div class="legend-item" style="background-color: #444"></div>
+                <span>贪吃蛇</span>
+              </div>
+            </div>
+            <!-- 实心爱心 &#9829; 空心爱心 &#9825; -->
+            <p>
+              玩家生命值:
+              <span class="lifeVal player-lifeVal">&#9829;&#9829;&#9829;</span>
+            </p>
+            <p>
+              人机生命值:
+              <span class="lifeVal machine-lifeVal">&#9829;&#9829;&#9829;</span>
+            </p>
+            <p>
+              玩家得分:
+              <span class="player-score">0</span>
+            </p>
+            <p>
+              人机得分:
+              <span class="machine-score">0</span>
+            </p>
+            <p class="tips">
+              <b>得分技巧</b>
+              ：吃掉最边缘的食物+20分，吃掉其他食物+10分。
+            </p>
+          </div>
+        </div>
+
+        <div class="machine-mf"></div>
+      </div>
+    </div>
+    <script type="module" src="./js/index.js"></script>
+    <script type="module" src="./js/machine.js"></script>
+  </body>
+</html>

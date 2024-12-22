@@ -4,6 +4,8 @@ import GameRoom from '@/views/GameRoom.vue'
 import GetInviteCode from '@/views/GetInviteCode.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
+import OfflineGames from '@/views/OfflineGame/OfflineGames.vue'
+import machineView from '@/views/OfflineGame/MachineView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -32,6 +34,23 @@ const router = createRouter({
       path: '/signin',
       name: 'signin',
       component: LoginView
+    },
+    {
+      path: '/offline',
+      name: 'offline',
+      redirect: '/offline/index', // 重定向到子路由 'index'
+      children: [
+        {
+          path: 'index', // 相对路径
+          name: 'offlineIndex',
+          component: OfflineGames
+        },
+        {
+          path: 'machine', // 相对路径
+          name: 'machine',
+          component: machineView
+        }
+      ]
     }
   ]
 })
