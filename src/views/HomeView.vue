@@ -8,14 +8,19 @@ import {
   ElCarousel,
   ElCarouselItem,
   ElMessageBox,
-  ElMessage
+  ElMessage,
+  ElDialog,
+  ElNotification
 } from 'element-plus'
 import { Promotion, UserFilled, Search, InfoFilled, Loading } from '@element-plus/icons-vue'
 import { useBaseStore } from '@/stores'
 import { getServerInfo, getAllMiniGame } from '@/api/game'
+import { getAdvertiseList } from '@/api/advertise'
 
 import gameSDK from '@/utils/gameSdk'
 import { useRouter } from 'vue-router'
+
+import DOMPurify from 'dompurify'
 
 const router = useRouter()
 const store = useBaseStore()
@@ -73,6 +78,8 @@ onMounted(async () => {
     .catch(() => {
       ElMessage.error('获取小游戏列表失败')
     })
+
+  await fetchAdList()
 })
 
 async function fetchServerInfo() {
@@ -154,24 +161,74 @@ function handleCancelMatch() {
   })
 }
 
-const clickCarousel = (item: number) => {
+const AdList = ref<
+  Array<{
+    id: number
+    index: number
+    title: string
+    description: string
+    url: string
+    content: string
+  }>
+>([])
+
+async function fetchAdList() {
+  try {
+    const { data: res } = await getAdvertiseList()
+    if (res.code === 200) {
+      AdList.value = res.data.sort((i, j) => i.index - j.index)
+    } else {
+      throw new Error()
+    }
+  } catch {
+    ElNotification({
+      message: '获取广告信息失败'
+    })
+  }
+}
+
+// 安全检测html文本
+const sanitizeHTML = (dirtyHtml: string) => {
+  return DOMPurify.sanitize(dirtyHtml, {
+    ALLOWED_TAGS: ['span', 'div', 'p'], // 允许的标签白名单
+    ALLOWED_ATTR: ['style', 'class'] // 允许的属性白名单
+  })
+}
+
+const clickCarousel = (item: {
+  id: number
+  title: string
+  description: string
+  url: string
+  content: string
+}) => {
   console.log('点击了', item)
 
   ElMessageBox({
-    title: '小游戏征集',
-    message: '现已支持接入第三方小游戏，点击确认前往查看详细信息。',
+    title: item.title,
+    message: sanitizeHTML(item.content),
     confirmButtonText: '确定',
-    showCancelButton: true,
+    showCancelButton: item.url ? true : false,
     cancelButtonText: '关闭',
     showClose: true,
     closeOnClickModal: true,
     closeOnPressEscape: true,
     closeOnHashChange: true,
     center: true,
-    roundButton: true
+    roundButton: true,
+    dangerouslyUseHTMLString: true
   }).then(() => {
-    window.location.href = 'https://linux.do/t/topic/175661'
+    if (!item.url || !item.url.trim()) return
+    if (['http', 'https'].some((str) => item.url.startsWith(str))) window.location.href = item.url
+    else router.push(item.url)
   })
+}
+
+// 打开设置弹窗
+const settingVisible = ref(false)
+const openSetting = () => {
+  if (!store.isLogin) return
+  settingVisible.value = true
 }
 </script>
 
@@ -191,19 +248,26 @@ const clickCarousel = (item: number) => {
       <div class="user-profile">
         <!-- 用户头像 -->
         <el-avatar :size="80" fit="fill" v-if="!avatarUrl" :icon="UserFilled" />
-        <el-avatar :size="80" v-else :src="avatarUrl" />
+        <!-- 鼠标悬停到头像，显示设置图标 -->
+        <el-avatar
+          :size="80"
+          v-else
+          :src="avatarUrl"
+          class="avatar-hover-setting"
+          @click="openSetting"
+        />
 
         <!-- 用户名称 -->
         <h2>{{ userName ? userName : '玩家请登录' }}</h2>
 
         <!-- 单机模式 -->
-        <div class="offline-mode login-btn">
+        <div class="offline-mode" :class="{ 'login-btn': !store.isLogin }">
           <el-button
             type="primary"
             @click="router.push({ name: 'offlineIndex' })"
             :icon="Promotion"
           >
-            单机/人机模式
+            离线模式
           </el-button>
         </div>
 
@@ -274,15 +338,42 @@ const clickCarousel = (item: number) => {
     </main>
   </div>
   <div class="fixed">
-    <el-carousel height="100px" direction="vertical" :autoplay="true" :interval="3000">
-      <el-carousel-item v-for="item in 1" :key="item" class="box-item" @click="clickCarousel(item)">
-        <div style="display: flex; flex-direction: column; color: red">
-          <span>小游戏</span>
-          <span>征集</span>
-        </div>
+    <el-carousel
+      height="120px"
+      direction="vertical"
+      arrow="never"
+      :autoplay="true"
+      :interval="2000"
+    >
+      <el-carousel-item
+        v-for="item in AdList"
+        :key="item.id"
+        :title="item.title"
+        class="box-item"
+        @click="clickCarousel(item)"
+      >
+        <div v-html="sanitizeHTML(item.description)"></div>
       </el-carousel-item>
     </el-carousel>
   </div>
+
+  <el-dialog v-model="settingVisible" width="800" draggable>
+    <template #default>
+      <span>TODO</span>
+    </template>
+    <template #header="{ titleId, titleClass }">
+      <div
+        :id="titleId"
+        :class="titleClass"
+        style="font-size: 25px; font-weight: bold; display: flex; justify-content: center"
+      >
+        设置
+      </div>
+    </template>
+    <template #footer>
+      <el-button @click="settingVisible = false"> 关闭 </el-button>
+    </template>
+  </el-dialog>
 </template>
 <style scoped lang="scss">
 .loading {
@@ -313,8 +404,8 @@ const clickCarousel = (item: number) => {
   position: fixed;
   right: 10px;
   top: 40px;
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   border-radius: 10%;
   background-color: rgba($color: #e7e7e7, $alpha: 0.8);
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -323,11 +414,10 @@ const clickCarousel = (item: number) => {
 
   .box-item {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    height: 100%;
+    width: 95%;
+    height: 95%;
   }
 }
 
@@ -372,6 +462,36 @@ const clickCarousel = (item: number) => {
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    .avatar-hover-setting {
+      &:hover {
+        filter: brightness(100%);
+      }
+
+      &:hover::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 50px;
+        height: 50px;
+        transform: translate(-50%, -50%);
+        background: transparent url('/assets/settings.svg') no-repeat center;
+        background-size: 50px 50px;
+      }
+
+      &:hover::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        transform: translate(-50%, -50%);
+        background-color: rgba($color: #fff, $alpha: 0.5);
+        background-size: 50px 50px;
+      }
+    }
 
     .login-btn {
       width: 200px;
