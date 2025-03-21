@@ -337,7 +337,7 @@ const openSetting = () => {
       </div>
     </main>
   </div>
-  <div class="fixed">
+  <div class="fixed" v-if="AdList.length">
     <el-carousel
       height="120px"
       direction="vertical"
